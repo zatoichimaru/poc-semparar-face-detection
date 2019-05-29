@@ -37,10 +37,10 @@ app.get('/batch_face_recognition', (req, res) => res.sendFile(path.join(viewsDir
 
 app.post('/webcam_face_detection', async (req, res) => {
   const connection = mysql.createConnection({
-    host     : 'localhost',
+    host     : 'poc.ci9niqaqsefm.us-east-1.rds.amazonaws.com',
     port     :  '3306',
-    user     : 'root',
-    password : '',
+    user     : 'jump',
+    password : 'jump1234',
     database : 'poc'
   });
   
