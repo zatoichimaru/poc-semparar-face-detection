@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="face-api.js"></script>
+  <script src="js/commons.js"></script>
+  <script src="js/faceDetectionControls.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="materialize.css">
+  <script type="text/javascript" src="js/jquery-2.1.1.min.js"></script>
+  <script src="js/materialize.min.js"></script>
+
+</head>
+<body>
+  <div id="navbar"></div>
+  <div class="center-content page-container">
+    <button id="js-startTimer">Iniciar</button>
+
+    <p>Tempo: <span class="js-timeout">2:00</span></p>
+
+    <button id="js-resetTimer">Parar</button>
+    
+    <div class="progress" id="loader">
+      <div class="indeterminate"></div>
+    </div>
+    <div style="position: relative" class="margin">
+      <video onloadedmetadata="onPlay(this)" id="inputVideo"  muted></video>
+      <canvas id="overlay" />
+    </div>
+  </body>
+
+  <script>
+    let forwardTimes = []
+
+    function updateTimeStats(timeInMs) {
+      forwardTimes = [timeInMs].concat(forwardTimes).slice(0, 30)
+      const avgTimeInMs = forwardTimes.reduce((total, t) => total + t) / forwardTimes.length
+      $('#time').val(`${Math.round(avgTimeInMs)} ms`)
+      $('#fps').val(`${faceapi.round(1000 / avgTimeInMs)}`)
+    }
+
+    async function onPlay() {
+      const videoEl = $('#inputVideo').get(0)
+
+      if(videoEl.paused || videoEl.ended || !isFaceDetectionModelLoaded())
+        return setTimeout(() => onPlay())
+
+      const options = getFaceDetectorOptions()
+
+      const ts = Date.now()
+
+      const result = await faceapi.detectSingleFace(videoEl, options)
+      
+      updateTimeStats(Date.now() - ts)
+
+      if (result) {
+        //ENVIA AJAX PARA SERVERS.JS
+       // console.log(result._box)
+        let objectDetection = {
+          face_position_x: result._box._x,
+          face_position_y: result._box._y,
+          face_position_width: result._box._width,
+          face_position_height: result._box._height
+        };
+
+        await saveFace(objectDetection);
+
+        const canvas = $('#overlay').get(0)
+        const dims = faceapi.matchDimensions(canvas, videoEl, true)
+        faceapi.draw.drawDetections(canvas, faceapi.resizeResults(result, dims))
+      }
+
+      setTimeout(() => onPlay())
+    }
+
+    async function run() {
+      // load face detection model
+      await changeFaceDetector(TINY_FACE_DETECTOR)
+      changeInputSize(128)
+
+      // try to access users webcam and stream the images
+      // to the video element
+      const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
+      const videoEl = $('#inputVideo').get(0)
+      videoEl.srcObject = stream
+    }
+
+    function updateResults() {}
+
+    $(document).ready(function() {
+      renderNavBar('#navbar', 'webcam_face_detection')
+      initFaceDetectionControls()
+      run()
+    })
+  </script>
+  <script type="text/javascript" src="js/countdown.js"></script>
+
+</body>
+</html>
