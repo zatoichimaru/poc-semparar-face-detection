@@ -80,8 +80,12 @@
       // try to access users webcam and stream the images
       // to the video element
       const stream = await navigator.mediaDevices.getUserMedia({ video: {} })
-      const videoEl = $('#inputVideo').get(0)
-      videoEl.srcObject = stream
+      .then(function(stream) {
+        const videoEl = $('#inputVideo').get(0)
+        videoEl.srcObject = stream
+      })
+      .catch(function(err) { console.log(err.name + ": " + err.message); }); 
+      
     }
 
     function updateResults() {}
